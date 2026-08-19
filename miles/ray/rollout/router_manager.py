@@ -39,10 +39,15 @@ async def resolve_router_addrs(args, *, router_providers: Sequence[BaseWorkerPro
         f"every model is served by its own router, so it needs its own provider "
         f"(got {len(router_providers)} for {len(config.models)} models)"
     )
-    router_addrs = {
-        model_cfg.name: await wait_router_ready(model_idx=model_idx, provider=router_providers[model_idx])
-        for model_idx, model_cfg in enumerate(config.models)
-    }
+    # the routers all boot at once, so waiting for them one at a time makes the run pay the slowest
+    # of them plus every other one, rather than just the slowest
+    ready = await asyncio.gather(
+        *[
+            wait_router_ready(model_idx=model_idx, provider=router_providers[model_idx])
+            for model_idx, _ in enumerate(config.models)
+        ]
+    )
+    router_addrs = {model_cfg.name: addr for model_cfg, addr in zip(config.models, ready, strict=True)}
 
     primary = router_addrs[config.models[0].name]
     args.sglang_router_ip = primary.host

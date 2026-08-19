@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import functools
 import inspect
 import logging
 from collections.abc import Callable, Coroutine
@@ -508,6 +509,7 @@ def _build_serve_worker(
     return bootstrapped_worker_class(worker_class_path)(ctor_kwargs=ctor_kwargs, context=context)
 
 
+@functools.cache
 def bootstrapped_worker_class(worker_class_path: str) -> type:
     worker_class = load_function(worker_class_path)
 
