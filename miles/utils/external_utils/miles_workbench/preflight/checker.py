@@ -3,9 +3,9 @@ from __future__ import annotations
 import logging
 import shutil
 import subprocess
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from concurrent.futures import ThreadPoolExecutor
-from typing import NamedTuple
+from typing import NamedTuple, TypeVar
 
 from miles.utils.external_utils.command_utils.helm_backend.launcher.command_wrapper import Kubectl
 from miles.utils.external_utils.miles_workbench.options import InstallArgs
@@ -29,6 +29,9 @@ logger = logging.getLogger(__name__)
 
 _ROLES_RESOURCE = "roles.rbac.authorization.k8s.io"
 _MAX_CONCURRENT_QUERIES = 32
+
+_QueryT = TypeVar("_QueryT")
+_AnswerT = TypeVar("_AnswerT")
 
 
 class _Answer(NamedTuple):
@@ -187,14 +190,10 @@ class Checker:
         return self._answered[(verb, resource)]
 
     def _list_in_parallel(self, targets: list[tuple[str, str]]) -> dict[tuple[str, str], _Answer]:
-        with ThreadPoolExecutor(max_workers=_MAX_CONCURRENT_QUERIES) as pool:
-            answers = list(
-                pool.map(
-                    lambda target: self._query("get", target[0], "-n", self.namespace, "-l", target[1], "-o", "name"),
-                    targets,
-                )
-            )
-        return dict(zip(targets, answers, strict=True))
+        return _answered_in_parallel(
+            targets,
+            lambda target: self._query("get", target[0], "-n", self.namespace, "-l", target[1], "-o", "name"),
+        )
 
     def _answer_ahead(self, wanted: Iterable[tuple[str, str]]) -> None:
         # one kubectl per rule asked in turn is a round trip per rule, and a plan runs to several
@@ -203,9 +202,7 @@ class Checker:
         if not pending:
             return
 
-        with ThreadPoolExecutor(max_workers=_MAX_CONCURRENT_QUERIES) as pool:
-            answers = list(pool.map(lambda pair: self._ask_can_i(*pair), pending))
-        self._answered.update(zip(pending, answers, strict=True))
+        self._answered.update(_answered_in_parallel(pending, lambda pair: self._ask_can_i(*pair)))
 
     def _ask_can_i(self, verb: str, resource: str) -> bool:
         target, _, subresource = resource.partition("/")
@@ -236,3 +233,8 @@ class Checker:
 
 def _is_cluster_provided(name: str) -> bool:
     return name in CLUSTER_PROVIDED_RESOURCES or name.startswith(DEFAULT_TOKEN_PREFIX)
+
+
+def _answered_in_parallel(queries: list[_QueryT], ask: Callable[[_QueryT], _AnswerT]) -> dict[_QueryT, _AnswerT]:
+    with ThreadPoolExecutor(max_workers=_MAX_CONCURRENT_QUERIES) as pool:
+        return dict(zip(queries, pool.map(ask, queries), strict=True))
