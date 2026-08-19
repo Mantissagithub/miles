@@ -44,7 +44,7 @@ async def resolve_router_addrs(args, *, router_providers: Sequence[BaseWorkerPro
     ready = await asyncio.gather(
         *[
             wait_router_ready(model_idx=model_idx, provider=router_providers[model_idx])
-            for model_idx, _ in enumerate(config.models)
+            for model_idx in range(len(config.models))
         ]
     )
     router_addrs = {model_cfg.name: addr for model_cfg, addr in zip(config.models, ready, strict=True)}
