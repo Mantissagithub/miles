@@ -294,10 +294,6 @@ def requirements_relaxed(parser: argparse.ArgumentParser) -> Iterator[None]:
             action.required = True
 
 
-def compute_arg_types(parser: argparse.ArgumentParser) -> dict[str, type]:
-    return {action.dest: _compute_arg_type(action) for action in parser._actions}
-
-
 def _compute_arg_type(action: argparse.Action) -> type:
     if isinstance(action, (argparse._StoreTrueAction, argparse._StoreFalseAction, argparse.BooleanOptionalAction)):
         return bool

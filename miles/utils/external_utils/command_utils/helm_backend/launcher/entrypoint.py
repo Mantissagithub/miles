@@ -393,31 +393,14 @@ def _write_helm_values(path: Path, values: dict[str, Any]) -> None:
     path.write_text(yaml.dump(values, Dumper=_HelmValuesDumper, default_flow_style=False, sort_keys=True))
 
 
-# `--lr 1e-6` is a string to python's resolver and a number to helm's, and the chart asks
-# for strings, so anything helm would read as another type is written quoted.
-_HELM_READS_AS_NON_STRING = re.compile(
-    r"""^(?:
-        [-+]?[0-9][0-9_]*
-      | 0[xX][0-9a-fA-F_]+
-      | 0[oO]?[0-7_]+
-      | [-+]?(?:[0-9][0-9_]*)?\.[0-9_]*(?:[eE][-+]?[0-9]+)?
-      | [-+]?[0-9][0-9_]*(?:\.[0-9_]*)?[eE][-+]?[0-9]+
-      | [-+]?\.(?:inf|Inf|INF)
-      | \.(?:nan|NaN|NAN)
-      | true|True|TRUE|false|False|FALSE
-      | null|Null|NULL|~
-    )$""",
-    re.VERBOSE,
-)
-
-
+# helm reads values.yaml with a yaml parser of its own, and the chart asks for strings, so every
+# scalar is quoted rather than asking which of the two parsers would read which spelling as a number
 class _HelmValuesDumper(yaml.SafeDumper):
     pass
 
 
 def _represent_helm_value_str(dumper: yaml.SafeDumper, value: str) -> yaml.ScalarNode:
-    style = "'" if _HELM_READS_AS_NON_STRING.match(value) else None
-    return dumper.represent_scalar("tag:yaml.org,2002:str", value, style=style)
+    return dumper.represent_scalar("tag:yaml.org,2002:str", value, style="'")
 
 
 _HelmValuesDumper.add_representer(str, _represent_helm_value_str)
