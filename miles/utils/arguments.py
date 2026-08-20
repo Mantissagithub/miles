@@ -3855,7 +3855,6 @@ def miles_validate_args(args):
             )
             args.object_store_backend = ObjectStoreBackend.MOONCAKE.value
         if not args.mooncake_store_init_kwargs:
-
             args.mooncake_store_init_kwargs = compute_mooncake_init_kwargs()
 
     args.run_uuid = _resolve_run_uuid(args)
