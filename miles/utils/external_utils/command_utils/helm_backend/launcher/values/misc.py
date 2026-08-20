@@ -87,9 +87,7 @@ class MooncakeInfo:
             return train_argv
 
         rendered = json.dumps(MooncakeInfo.cluster_init_kwargs(plan, host=host))
-        if not ArgvManipulator.declares(train_argv, MOONCAKE_INIT_KWARGS_FLAG):
-            return ArgvManipulator.with_flag(train_argv, MOONCAKE_INIT_KWARGS_FLAG, rendered)
-        return ArgvManipulator.replacing_value(train_argv, MOONCAKE_INIT_KWARGS_FLAG, rendered)
+        return ArgvManipulator.add_or_replace_value(train_argv, MOONCAKE_INIT_KWARGS_FLAG, rendered)
 
     @staticmethod
     def cluster_init_kwargs(plan: MooncakePlan, *, host: str) -> dict[str, Any]:
