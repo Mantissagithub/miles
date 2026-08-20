@@ -30,8 +30,7 @@ from miles.utils.hf_config import is_dsa, load_hf_config
 from miles.utils.logging_utils import configure_logger_raw
 from miles.utils.lora import is_lora_enabled
 from miles.utils.megatron_args_utils import compute_megatron_world_size_except_dp
-from miles.utils.object_store import ObjectStoreBackend
-from miles.utils.object_store_config import compute_mooncake_init_kwargs
+from miles.utils.object_store import ObjectStoreBackend, compute_mooncake_init_kwargs
 from miles.utils.run_uuid import RUN_UUID_LENGTH, generate_run_uuid, validate_run_uuid
 from miles.utils.tracking_utils.ci_history import RECORD_DIR_ENV
 from miles.utils.workers.argv_utils import with_relax_parser_required_args
