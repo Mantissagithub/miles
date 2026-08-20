@@ -22,4 +22,9 @@ class RayBackendCapability(BackendCapability):
         return RayWorkerProvider(worker_manager_handle=self._worker_manager_handle)
 
     def cell_operations(self) -> BaseCellOperations:
-        return RayCellOperations(worker_manager_handle=self._worker_manager_handle)
+        from miles.ray.specs.inference import create_inference_controller_handle
+
+        return RayCellOperations(
+            worker_manager_handle=self._worker_manager_handle,
+            inference_controller=create_inference_controller_handle(capability=self),
+        )
