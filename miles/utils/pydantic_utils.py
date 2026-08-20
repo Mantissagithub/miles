@@ -2,11 +2,11 @@ from pydantic import BaseModel, ConfigDict
 
 
 class StrictBaseModel(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(extra="forbid", ser_json_inf_nan="constants")
 
 
 class FrozenStrictBaseModel(BaseModel):
-    model_config = ConfigDict(extra="forbid", frozen=True)
+    model_config = ConfigDict(extra="forbid", frozen=True, ser_json_inf_nan="constants")
 
 
 class FrozenPartialBaseModel(BaseModel):
