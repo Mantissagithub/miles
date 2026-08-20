@@ -50,10 +50,6 @@ _async_loop_lock = threading.Lock()
 
 def get_async_loop():
     global async_loop
-    # callers reach this from worker threads, so two of them arriving together would each build a
-    # loop and the later one would replace the earlier; the awaitables already waiting on the
-    # replaced loop then belong to a loop nothing runs, and every primitive they share reports
-    # being bound to a different event loop
     if async_loop is None:
         with _async_loop_lock:
             if async_loop is None:

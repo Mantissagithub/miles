@@ -232,8 +232,6 @@ def spec_session_server(args) -> CommandWorkerSpec:
         ],
         env_var=lambda _ctx: {},
         scheduling=SchedulingSpec(
-            # it fronts a router, so a run with no engine fleet at all has nothing for it to serve and
-            # its launch command has no router address to read
             num_cells=args.num_session_servers if args.use_session_server and _config.models else 0,
             num_workers_per_cell=1,
             num_gpus_per_worker=0,

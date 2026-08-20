@@ -23,9 +23,6 @@ logger = logging.getLogger(__name__)
 
 @functools.cache
 def _assert_sglang_serves_a_launch_gate() -> None:
-    # the run holds every engine at its gate until the fleet is complete, so an sglang serving
-    # nothing on that port leaves each cell waiting out its whole activation deadline on an engine
-    # that is already up; said at spec time so it is one line rather than a thirty minute silence
     assert any(field.name == "gated_launch_port" for field in dataclasses.fields(ServerArgs)), (
         "this sglang has no --gated-launch-port, and miles launches every inference engine through "
         "that gate; upgrade sglang to one that serves it"
@@ -231,9 +228,6 @@ def _compute_server_args(
 
 def _lora_target_modules_for_cli(args) -> list[str]:
     targets = convert_target_modules_to_hf(args.target_modules)
-    # sglang's lora runtime serves names its own --lora-target-modules choices do not list, and an
-    # engine is launched through that cli, so naming one of them is an engine that never starts;
-    # the shorthand covers them because it resolves against what the runtime knows
     if unlisted := sorted(set(targets) - set(SUPPORTED_LORA_TARGET_MODULES)):
         logger.info(f"Letting sglang discover its lora targets: it does not accept {unlisted} on the command line")
         return [LORA_TARGET_ALL_MODULES]

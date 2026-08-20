@@ -29,8 +29,6 @@ async def abort(state: GenerateState, pendings: set, rollout_id: int) -> list[li
 
     urls = await get_worker_urls(args)
     logger.info(f"Abort request for {urls}")
-    # an engine being healed cannot be told to abort, and does not need to be: it is losing the
-    # requests either way, so demanding an answer here would end the run over a worker restarting
     results = await asyncio.gather(
         *[post(f"{url}/abort_request", {"abort_all": True}) for url in urls], return_exceptions=True
     )
@@ -39,10 +37,6 @@ async def abort(state: GenerateState, pendings: set, rollout_id: int) -> list[li
         if isinstance(result, BaseException):
             logger.warning(f"Failed to abort worker at {url}: {result}", exc_info=result)
             refused.append(url)
-    # a router mid-heal can legitimately list no worker at all, and there is nothing to abort then. an
-    # engine actually being healed is unregistered from the router, so it is usually absent here rather
-    # than present and refusing; what is left to tolerate is the race where the router still lists a cell
-    # that just went away, which takes out a minority of the fleet at a time
     assert len(refused) <= len(urls) // 2, (
         f"{len(refused)} of the {len(urls)} engines refused an abort, which is more than the router can be "
         f"stale about, so this is the fleet being unreachable rather than part of it healing, and the rollout "

@@ -196,8 +196,6 @@ class Checker:
         )
 
     def _answer_ahead(self, wanted: Iterable[tuple[str, str]]) -> None:
-        # one kubectl per rule asked in turn is a round trip per rule, and a plan runs to several
-        # hundred of them, so the wait is the network rather than the cluster's answer
         pending = sorted({pair for pair in wanted if pair not in self._answered})
         if not pending:
             return

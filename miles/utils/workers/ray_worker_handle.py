@@ -30,9 +30,6 @@ class RayWorkerHandle(BaseWorkerHandle):
         return call
 
     async def wait_ready(self, *, timeout: float, allow_server_uuid_change: bool = False) -> None:
-        # nothing to unpin: a ray actor handle pins no boot uuid in the first place. an actor that
-        # really did restart answers every call with RayActorError, which surfaces below as the
-        # unreachable error every caller of this flag already retries on
         del allow_server_uuid_change
 
         try:

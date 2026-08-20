@@ -34,9 +34,6 @@ logger = logging.getLogger(__name__)
 
 
 def get_local_gpu_id():
-    # the platform hands a pod its whole node and the device plugin picks the cards, so ray owns no
-    # gpu assignment to report and answers an empty list; the supervisor that started this rank is
-    # what knows which of the pod's cards is this one's
     if (index := os.environ.get(SUBPROCESS_INDEX_ENV_VAR)) is not None:
         return int(index)
 

@@ -127,10 +127,6 @@ class FTTestActionControllerExecutor:
                     await self._wait_cell_observed(action.cell_id)
 
     async def _wait_cell_observed(self, cell_id: str) -> None:
-        # resuming a cell only asks the platform to bring it back, and the next step reconfigures
-        # against whatever the controller has observed by then; a worker takes seconds to be given
-        # its ports, so returning here as soon as the request lands makes the step that is supposed
-        # to heal race the cell it is meant to heal, and the run silently continues degraded
         async def _check(_remaining: float) -> None:
             if cell_id not in self._controller.cell_ids:
                 raise TimeoutError(f"{cell_id} was resumed but is not observed yet")

@@ -15,9 +15,6 @@ from miles.utils.workers.worker_spec import HostAndPort
 logger = logging.getLogger(__name__)
 
 _ROUTER_READY_TIMEOUT_SECONDS = 30.0
-# a router binds its port as its first act, but a session server imports transformers and loads the
-# tokenizer and chat template before it binds, and it is launched through the platform now, so the
-# same wait also covers being scheduled; the router's budget left neither of those any room
 _SESSION_SERVER_READY_TIMEOUT_SECONDS = 300.0
 
 
@@ -39,8 +36,6 @@ async def resolve_router_addrs(args, *, router_providers: Sequence[BaseWorkerPro
         f"every model is served by its own router, so it needs its own provider "
         f"(got {len(router_providers)} for {len(config.models)} models)"
     )
-    # the routers all boot at once, so waiting for them one at a time makes the run pay the slowest
-    # of them plus every other one, rather than just the slowest
     ready = await asyncio.gather(
         *[
             wait_router_ready(model_idx=model_idx, provider=router_providers[model_idx])

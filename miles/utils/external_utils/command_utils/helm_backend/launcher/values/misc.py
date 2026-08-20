@@ -87,8 +87,6 @@ class MooncakeInfo:
             return train_argv
 
         rendered = json.dumps(MooncakeInfo.cluster_init_kwargs(plan, host=host))
-        # a run moved onto this store by the backend never spelled the flag out, and every pod parses
-        # this argv on its own, so leaving it out is each pod defaulting to a master on its own loopback
         if not ArgvManipulator.declares(train_argv, MOONCAKE_INIT_KWARGS_FLAG):
             return ArgvManipulator.with_flag(train_argv, MOONCAKE_INIT_KWARGS_FLAG, rendered)
         return ArgvManipulator.replacing_value(train_argv, MOONCAKE_INIT_KWARGS_FLAG, rendered)

@@ -149,8 +149,6 @@ class ServerCell:
         return SGLangApiClient(server_url=self.server_url, api_key=self.meta.sglang_api_key)
 
     async def init(self) -> None:
-        # releasing the gate is what starts the engine, so a second init has to be refused
-        # before it reaches one that is already starting
         assert isinstance(self._state, StateUninitialized), f"{self._state=}"
         addr_info = await self._compute_addr_info()
         if (gate_url := addr_info.gate_url) is not None:

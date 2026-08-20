@@ -84,9 +84,6 @@ def render_cli_argv(
 
 
 def _parse_without_exiting(parser: argparse.ArgumentParser, argv: list[str]) -> argparse.Namespace:
-    # argparse answers a value it will not accept by exiting the process, and this runs inside the
-    # worker that is launching the command, so an unrenderable value would take the worker down
-    # past every handler that reports one, leaving the run waiting on an engine nobody is starting
     try:
         return parser.parse_args(argv)
     except SystemExit as exiting:
@@ -282,8 +279,6 @@ def _compute_arg_spec(action: argparse.Action) -> _ArgSpec:
 
 @contextlib.contextmanager
 def requirements_relaxed(parser: argparse.ArgumentParser) -> Iterator[None]:
-    # a model script names an architecture, not a whole run, so the arguments a run is required to
-    # carry are not its to supply; leaving them enforced makes argparse exit the process outright
     required = [action for action in parser._actions if action.required]
     for action in required:
         action.required = False

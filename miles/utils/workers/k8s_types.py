@@ -65,8 +65,6 @@ class ContainerStateRunning(FrozenPartialBaseModel):
 
 
 class ContainerState(FrozenPartialBaseModel):
-    # the client hands back a deserialized object rather than the raw json, so every nested block
-    # has to be a model of its own; a bare mapping here reads the running container as unparseable
     running: ContainerStateRunning | None = None
     terminated: ContainerStateTerminated | None = None
 

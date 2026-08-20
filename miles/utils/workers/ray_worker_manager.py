@@ -119,8 +119,6 @@ class RayWorkerManager:
         return addrs
 
     def get_addrs(self) -> dict[str, list[NamedHostAndPorts]]:
-        # a description is taken of whatever exists at the time, so a worker whose ports are still
-        # being allocated has to render as holding none of them rather than as holding some
         return {
             name: [a.self_addrs or {} for c in g.cells if c.alive for a in c.actors] for name, g in self._pools.items()
         }
@@ -301,10 +299,6 @@ class _CellManager(Generic[SpecT]):
 
     @property
     def _all_workers_addressed(self) -> bool:
-        # an observer builds a cell out of what this reports, reading its workers' endpoints as it
-        # goes, and a worker still being given its ports describes itself as holding none of them;
-        # reporting such a cell hands the observer a worker it cannot address, which fails the whole
-        # reconcile sweep and leaves even the healthy cells of that round unreconciled
         return all(a.self_addrs is not None for a in self.actors or [])
 
 
@@ -328,9 +322,6 @@ class _BaseActorManager(Generic[SpecT]):
         raise NotImplementedError
 
     async def alloc_ports(self) -> None:
-        # every port here is allocated across an await, and the manager answers address reads in
-        # between, so a map published as it fills lets a reader see a worker with only some of its
-        # endpoints and read the absence of the rest as the worker not having them at all
         allocated: NamedHostAndPorts = {}
 
         node_ip = await self.actor_handle._get_node_ip.remote()
@@ -349,8 +340,6 @@ class _BaseActorManager(Generic[SpecT]):
         self.self_addrs = allocated
 
     async def _assert_static_port_is_free(self, port: int, *, port_name: str, node_ip: str) -> None:
-        # A readiness probe cannot tell a stale listener from our own, so a run that skipped this
-        # would wire itself to whatever the previous run left behind on this port.
         free = await self.actor_handle._is_port_available.remote(port=port)
         assert free, (
             f"Port {port} on {node_ip} is already in use, so {self.name} cannot serve its {port_name!r} "
@@ -509,8 +498,6 @@ def _build_serve_worker(
 def bootstrapped_worker_class(worker_class_path: str) -> type:
     worker_class = load_function(worker_class_path)
 
-    # the manager probes every actor it launches for its node and its free ports, so a worker
-    # class that never asked to be reachable that way still has to answer
     class BootstrappedWorker(worker_class, NodeProbeMixin):
         def __init__(
             self, *, ctor_kwargs: Callable[[WorkerCtorContext], dict[str, Any]], context: WorkerLaunchContext

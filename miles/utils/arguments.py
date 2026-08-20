@@ -90,8 +90,6 @@ def _resolve_rollout_functions(args) -> None:
         "--eval-num-gpus and a CheckpointEvalFn --eval-function-path each select an eval "
         "backend; the fleet would boot and then hand the work to the other one."
     )
-    # asserted here rather than beside the other external-rollout topology checks, because a
-    # fleet asked for at all turns on the snapshot posture and its gate would fire first
     assert not (
         args.eval_num_gpus > 0 and _compute_rollout_external(args)
     ), "eval_num_gpus cannot be set with external rollout engines."
@@ -2749,10 +2747,6 @@ def get_miles_extra_args_provider(add_custom_arguments=None):
             return parser
 
         def add_user_provided_function_arguments(parser):
-            # this reads the argv it has so far only to learn which user modules to ask for arguments,
-            # and a caller building a throwaway parser supplies no argv at all; leaving the run's own
-            # required arguments enforced makes argparse print a full usage screen and exit, which the
-            # except below then turns into a parser silently missing every argument added past here
             try:
                 with requirements_relaxed(parser):
                     args_partial, _ = parser.parse_known_args()
@@ -3864,9 +3858,6 @@ def miles_validate_args(args):
             )
             args.object_store_backend = ObjectStoreBackend.MOONCAKE.value
         if not args.mooncake_store_init_kwargs:
-            # this backend chose the store, not the run, so the run cannot be asked to configure it;
-            # the launcher rewrites the host to the master it starts for this release, and asserts
-            # these kwargs exist, so leaving them unset made every defaulted run die at launch
 
             args.mooncake_store_init_kwargs = compute_mooncake_init_kwargs()
 
