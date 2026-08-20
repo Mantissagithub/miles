@@ -396,7 +396,13 @@ def _write_helm_values(path: Path, values: dict[str, Any]) -> None:
 # helm reads values.yaml with a yaml parser of its own, and the chart asks for strings, so every
 # scalar is quoted rather than asking which of the two parsers would read which spelling as a number
 class _HelmValuesDumper(yaml.SafeDumper):
-    pass
+    def represent_mapping(self, tag: str, mapping: Any, flow_style: bool | None = None) -> yaml.MappingNode:
+        # a key is read by the chart as the name of a field rather than as a value of one, so quoting
+        # it buys nothing and only makes the file harder to read
+        node = super().represent_mapping(tag, mapping, flow_style=flow_style)
+        for key, _ in node.value:
+            key.style = None
+        return node
 
 
 def _represent_helm_value_str(dumper: yaml.SafeDumper, value: str) -> yaml.ScalarNode:
