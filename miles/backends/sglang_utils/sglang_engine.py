@@ -21,14 +21,6 @@ from miles.utils.multi_lora import is_multi_lora_enabled
 logger = logging.getLogger(__name__)
 
 
-@functools.cache
-def _assert_sglang_serves_a_launch_gate() -> None:
-    assert any(field.name == "gated_launch_port" for field in dataclasses.fields(ServerArgs)), (
-        "this sglang has no --gated-launch-port, and miles launches every inference engine through "
-        "that gate; upgrade sglang to one that serves it"
-    )
-
-
 def _to_local_gpu_id(physical_gpu_id: int) -> int:
     cvd = os.environ.get("CUDA_VISIBLE_DEVICES") or os.environ.get("HIP_VISIBLE_DEVICES")
     if not cvd:
@@ -232,3 +224,11 @@ def _lora_target_modules_for_cli(args) -> list[str]:
         logger.info(f"Letting sglang discover its lora targets: it does not accept {unlisted} on the command line")
         return [LORA_TARGET_ALL_MODULES]
     return targets
+
+
+@functools.cache
+def _assert_sglang_serves_a_launch_gate() -> None:
+    assert any(field.name == "gated_launch_port" for field in dataclasses.fields(ServerArgs)), (
+        "this sglang has no --gated-launch-port, and miles launches every inference engine through "
+        "that gate; upgrade sglang to one that serves it"
+    )
