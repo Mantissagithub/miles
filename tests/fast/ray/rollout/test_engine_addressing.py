@@ -99,7 +99,7 @@ class TestAddressingOfLaunchedEngines:
 
         contexts = await _launch_engines(args)
 
-        assert sorted(contexts) == [f"inference-engine-0-0-{cell_index}-0" for cell_index in range(8)]
+        assert sorted(contexts) == [f"inference-engine-all-0-0-{cell_index}-0" for cell_index in range(8)]
         issued: list[int] = []
         for ctx in contexts.values():
             addrs = ctx.self_addrs
@@ -117,7 +117,7 @@ class TestAddressingOfLaunchedEngines:
 
         contexts = await _launch_engines(args)
 
-        prefill = contexts["inference-engine-0-0-0-0"].self_addrs
+        prefill = contexts["inference-engine-all-0-0-0-0"].self_addrs
         assert "disaggregation_bootstrap" in prefill
         ports = _all_ports(prefill)
         assert len(set(ports)) == len(ports)
