@@ -13,13 +13,15 @@ class RayCellOperations(BaseCellOperations):
         self, *, worker_manager_handle: ray.actor.ActorHandle, inference_controller: BaseWorkerHandle
     ) -> None:
         self._worker_manager_handle = worker_manager_handle
+        # TEMPORARY: this layer is not meant to know the inference controller, deliberately violated
+        # until the weight-update fault tolerance work removes the need
         self._inference_controller = inference_controller
 
     async def cell_infos(self, *, pool_ids: list[str]) -> dict[str, CellInfo]:
         return await self._worker_manager_handle.get_cell_infos.remote(pool_ids=pool_ids)
 
     async def suspend(self, *, cell_id: str) -> None:
-        # TEMPORARY: taking the lock the weight update holds, reverted with the weight-update fault tolerance work
+        # TEMPORARY: taking the lock the weight update holds, reverted with that fault tolerance work
         await self._inference_controller.stop_cell_between_weight_updates(cell_id=cell_id)
 
     async def resume(self, *, cell_id: str) -> None:
