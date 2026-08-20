@@ -43,7 +43,8 @@ class Checker:
     def __init__(self, namespace: str) -> None:
         self.namespace = namespace
         self._reporter = Reporter()
-        self._answered: dict[tuple[str, str], bool] = {}
+        self._can_i_answers: dict[tuple[str, str], bool] = {}
+        self._listings: dict[tuple[str, str], _Answer] = {}
 
     @property
     def failed(self) -> bool:
@@ -89,12 +90,12 @@ class Checker:
             f"app.kubernetes.io/managed-by={MANAGED_BY},app.kubernetes.io/name notin ({family})",
         ]
 
-        listings = self._list_in_parallel([(kind, selector) for kind in NAMESPACE_KINDS for selector in selectors])
+        self._prefetch_listings((kind, selector) for kind in NAMESPACE_KINDS for selector in selectors)
 
         foreign: list[str] = []
         for kind in NAMESPACE_KINDS:
             for selector in selectors:
-                answer = listings[(kind, selector)]
+                answer = self._list(kind, selector)
                 if not answer.ok:
                     if any(marker in answer.output for marker in UNSERVED_RESOURCE_MARKERS):
                         break
@@ -168,7 +169,7 @@ class Checker:
         self.report(True, message)
 
     def denied_rules(self, *rule_sets: dict[str, tuple[str, ...]]) -> list[str]:
-        self._answer_ahead(
+        self._prefetch_can_i(
             (verb, resource) for rules in rule_sets for resource, verbs in rules.items() for verb in verbs
         )
 
@@ -183,24 +184,31 @@ class Checker:
         return all(self._holds_on_roles(verb, role) for verb in ("escalate", "bind"))
 
     def can_i(self, verb: str, resource: str) -> bool:
-        if (answered := self._answered.get((verb, resource))) is not None:
-            return answered
+        if (answered := self._can_i_answers.get((verb, resource))) is None:
+            answered = self._can_i_answers[(verb, resource)] = self._ask_can_i(verb, resource)
+        return answered
 
-        self._answered[(verb, resource)] = self._ask_can_i(verb, resource)
-        return self._answered[(verb, resource)]
+    def _list(self, kind: str, selector: str) -> _Answer:
+        if (answer := self._listings.get((kind, selector))) is None:
+            answer = self._listings[(kind, selector)] = self._ask_listing(kind, selector)
+        return answer
 
-    def _list_in_parallel(self, targets: list[tuple[str, str]]) -> dict[tuple[str, str], _Answer]:
-        return _answered_in_parallel(
-            targets,
-            lambda target: self._query("get", target[0], "-n", self.namespace, "-l", target[1], "-o", "name"),
-        )
-
-    def _answer_ahead(self, wanted: Iterable[tuple[str, str]]) -> None:
-        pending = sorted({pair for pair in wanted if pair not in self._answered})
+    def _prefetch_listings(self, wanted: Iterable[tuple[str, str]]) -> None:
+        pending = sorted({pair for pair in wanted if pair not in self._listings})
         if not pending:
             return
 
-        self._answered.update(_answered_in_parallel(pending, lambda pair: self._ask_can_i(*pair)))
+        self._listings.update(_ask_in_parallel(pending, lambda pair: self._ask_listing(*pair)))
+
+    def _ask_listing(self, kind: str, selector: str) -> _Answer:
+        return self._query("get", kind, "-n", self.namespace, "-l", selector, "-o", "name")
+
+    def _prefetch_can_i(self, wanted: Iterable[tuple[str, str]]) -> None:
+        pending = sorted({pair for pair in wanted if pair not in self._can_i_answers})
+        if not pending:
+            return
+
+        self._can_i_answers.update(_ask_in_parallel(pending, lambda pair: self._ask_can_i(*pair)))
 
     def _ask_can_i(self, verb: str, resource: str) -> bool:
         target, _, subresource = resource.partition("/")
@@ -233,6 +241,6 @@ def _is_cluster_provided(name: str) -> bool:
     return name in CLUSTER_PROVIDED_RESOURCES or name.startswith(DEFAULT_TOKEN_PREFIX)
 
 
-def _answered_in_parallel(queries: list[_QueryT], ask: Callable[[_QueryT], _AnswerT]) -> dict[_QueryT, _AnswerT]:
+def _ask_in_parallel(queries: list[_QueryT], ask: Callable[[_QueryT], _AnswerT]) -> dict[_QueryT, _AnswerT]:
     with ThreadPoolExecutor(max_workers=_MAX_CONCURRENT_QUERIES) as pool:
         return dict(zip(queries, pool.map(ask, queries), strict=True))
