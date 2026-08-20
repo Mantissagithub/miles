@@ -189,7 +189,7 @@ def _boolean_option_string(action: argparse.Action, *, value: bool) -> str:
 
 def parse_declared_args(text: str, *, parser: argparse.ArgumentParser) -> dict[str, object]:
     tokens = shlex.split(text)
-    with requirements_relaxed(parser):
+    with with_relax_parser_required_args(parser):
         namespace, unknown = parser.parse_known_args(tokens)
     assert not unknown, f"the argument parser does not declare {unknown} of {text!r}"
 
@@ -278,7 +278,7 @@ def _compute_arg_spec(action: argparse.Action) -> _ArgSpec:
 
 
 @contextlib.contextmanager
-def requirements_relaxed(parser: argparse.ArgumentParser) -> Iterator[None]:
+def with_relax_parser_required_args(parser: argparse.ArgumentParser) -> Iterator[None]:
     required = [action for action in parser._actions if action.required]
     for action in required:
         action.required = False

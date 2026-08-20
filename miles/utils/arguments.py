@@ -37,7 +37,7 @@ from miles.utils.object_store import ObjectStoreBackend
 from miles.utils.object_store_config import compute_mooncake_init_kwargs
 from miles.utils.run_uuid import RUN_UUID_LENGTH, generate_run_uuid, validate_run_uuid
 from miles.utils.tracking_utils.ci_history import RECORD_DIR_ENV
-from miles.utils.workers.argv_utils import requirements_relaxed
+from miles.utils.workers.argv_utils import with_relax_parser_required_args
 from miles.utils.workers.types import ClusterBackend, DeployComponent, WorkerCommBackend, resolve_worker_comm_backend
 
 logger = logging.getLogger(__name__)
@@ -2748,7 +2748,7 @@ def get_miles_extra_args_provider(add_custom_arguments=None):
 
         def add_user_provided_function_arguments(parser):
             try:
-                with requirements_relaxed(parser):
+                with with_relax_parser_required_args(parser):
                     args_partial, _ = parser.parse_known_args()
             except SystemExit:
                 return parser
