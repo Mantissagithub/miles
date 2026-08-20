@@ -283,7 +283,7 @@ class _CellManager(Generic[SpecT]):
         return CellInfo(
             cell_id=self.cell_id,
             pool_id=self.spec.name,
-            alive=self.alive and self._all_workers_addressed,
+            alive=self.alive and self._all_workers_have_addrs,
             worker_names=[a.name for a in self.actors] if self.actors is not None else [],
             workers_hash=f"pseudo-hash-{self.generation}",
             meta=f(WorkerMetaContext(cell_index=self.cell_index)) if (f := self.spec.meta) is not None else {},
@@ -298,7 +298,7 @@ class _CellManager(Generic[SpecT]):
         return self.actors is not None
 
     @property
-    def _all_workers_addressed(self) -> bool:
+    def _all_workers_have_addrs(self) -> bool:
         return all(a.self_addrs is not None for a in self.actors or [])
 
 
